@@ -1,0 +1,253 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(47, 91%, 54%);
+  --primary-foreground: hsl(26, 83%, 14%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Egyptian color palette */
+  --egyptian-gold: hsl(47, 91%, 54%);
+  --deep-teal: hsl(192, 55%, 22%);
+  --cream: hsl(42, 33%, 94%);
+  --bronze: hsl(25, 75%, 31%);
+  --warm-white: hsl(60, 9%, 98%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(47, 91%, 54%);
+  --primary-foreground: hsl(26, 83%, 14%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-warm-white text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  
+  [dir="rtl"] {
+    font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .egyptian-gold {
+    @apply text-yellow-600;
+    color: hsl(47, 91%, 54%);
+  }
+  
+  .bg-egyptian-gold {
+    background-color: hsl(47, 91%, 54%);
+  }
+  
+  .deep-teal {
+    color: hsl(192, 55%, 22%);
+  }
+  
+  .bg-deep-teal {
+    background-color: hsl(192, 55%, 22%);
+  }
+  
+  .bronze {
+    color: hsl(25, 75%, 31%);
+  }
+  
+  .bg-bronze {
+    background-color: hsl(25, 75%, 31%);
+  }
+  
+  .bg-cream {
+    background-color: hsl(42, 33%, 94%);
+  }
+  
+  .bg-warm-white {
+    background-color: hsl(60, 9%, 98%);
+  }
+  
+  .gradient-egyptian {
+    background: linear-gradient(135deg, hsl(47, 91%, 54%) 0%, hsl(192, 55%, 22%) 100%);
+  }
+  
+  .glass-morphism {
+    backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .mobile-container {
+    @apply max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden;
+  }
+  
+  .status-bar {
+    @apply gradient-egyptian h-6 w-full;
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .pulse-glow {
+    animation: pulseGlow 2s infinite;
+  }
+}
+
+@layer utilities {
+  .arabic-text {
+    font-family: 'Noto Sans Arabic', sans-serif;
+    direction: rtl;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { 
+    box-shadow: 0 0 5px hsla(47, 91%, 54%, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 20px hsla(47, 91%, 54%, 0.6);
+  }
+}
+
+/* PWA styles */
+.pwa-install-banner {
+  @apply fixed bottom-20 left-4 right-4 bg-egyptian-gold text-white p-4 rounded-xl shadow-lg z-50;
+  animation: slideUp 0.3s ease-out;
+}
+
+.camera-overlay {
+  @apply absolute inset-0 flex items-center justify-center;
+}
+
+.camera-frame {
+  @apply w-64 h-80 border-2 rounded-3xl opacity-50;
+  border-color: hsl(47, 91%, 54%);
+}
+
+/* Touch-friendly buttons */
+.touch-button {
+  @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  touch-action: manipulation;
+}
+
+/* Loading states */
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Form styles */
+.form-group {
+  @apply space-y-2;
+}
+
+.form-label {
+  @apply text-sm font-medium text-gray-700;
+}
+
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-egyptian-gold focus:border-transparent;
+}
+
+/* Chat styles */
+.chat-bubble {
+  @apply max-w-xs mx-2 mb-4 px-4 py-2 rounded-2xl;
+}
+
+.chat-bubble.user {
+  @apply bg-egyptian-gold text-white ml-auto;
+}
+
+.chat-bubble.assistant {
+  @apply bg-gray-100 text-gray-800 mr-auto;
+}
+
+/* Product card styles */
+.product-card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-100 p-4 transition-all duration-200 hover:shadow-lg hover:border-egyptian-gold;
+}
+
+/* Progress indicator */
+.progress-bar {
+  @apply w-full bg-gray-200 rounded-full h-2;
+}
+
+.progress-fill {
+  @apply bg-gradient-to-r from-egyptian-gold to-deep-teal h-2 rounded-full transition-all duration-500;
+}
+
+/* Responsive typography */
+@screen sm {
+  .mobile-container {
+    @apply max-w-sm;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .slide-up,
+  .pulse-glow {
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .gradient-egyptian {
+    background: hsl(47, 91%, 54%);
+  }
+  
+  .glass-morphism {
+    background: rgba(255, 255, 255, 0.9);
+  }
+}

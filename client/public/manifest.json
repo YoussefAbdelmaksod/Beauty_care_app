@@ -1,0 +1,127 @@
+{
+  "name": "Beauty Care - Egyptian Skincare",
+  "short_name": "Beauty Care",
+  "description": "AI-powered Egyptian skincare and beauty recommendation app with personalized routines and expert guidance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAFA",
+  "theme_color": "#D4AF37",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["beauty", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile-1.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home screen with skin analysis options"
+    },
+    {
+      "src": "/screenshot-mobile-2.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Camera analysis interface"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Quick Skin Analysis",
+      "short_name": "Analyze",
+      "description": "Take a photo for instant skin analysis",
+      "url": "/analysis?mode=photo",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Chat with Expert",
+      "short_name": "Chat",
+      "description": "Get personalized beauty advice",
+      "url": "/chat",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Browse Products",
+      "short_name": "Products",
+      "description": "Discover Egyptian skincare products",
+      "url": "/products",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "features": [
+    "camera",
+    "geolocation"
+  ],
+  "permissions": [
+    "camera",
+    "storage"
+  ]
+}
