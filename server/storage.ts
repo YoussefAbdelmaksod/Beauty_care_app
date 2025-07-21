@@ -1,8 +1,9 @@
 import { 
-  users, products, skinAnalyses, routines, chatMessages, pharmacies,
+  users, products, skinAnalyses, routines, chatMessages, pharmacies, quizResults,
   type User, type InsertUser, type Product, type InsertProduct,
   type SkinAnalysis, type InsertSkinAnalysis, type Routine, type InsertRoutine,
-  type ChatMessage, type InsertChatMessage, type Pharmacy, type InsertPharmacy
+  type ChatMessage, type InsertChatMessage, type Pharmacy, type InsertPharmacy,
+  type QuizResult, type InsertQuizResult
 } from "@shared/schema";
 
 export interface IStorage {
@@ -42,6 +43,10 @@ export interface IStorage {
   getNearbyPharmacies(lat: number, lng: number, radius?: number): Promise<Pharmacy[]>;
   getPharmacies(): Promise<Pharmacy[]>;
   createPharmacy(pharmacy: InsertPharmacy): Promise<Pharmacy>;
+
+  // Quiz Results
+  createQuizResult(result: InsertQuizResult): Promise<QuizResult>;
+  getUserQuizResults(userId: number): Promise<QuizResult[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -51,6 +56,7 @@ export class MemStorage implements IStorage {
   private routines: Map<number, Routine> = new Map();
   private chatMessages: Map<number, ChatMessage> = new Map();
   private pharmacies: Map<number, Pharmacy> = new Map();
+  private quizResults: Map<number, QuizResult> = new Map();
   
   private currentUserId = 1;
   private currentProductId = 1;
@@ -58,6 +64,7 @@ export class MemStorage implements IStorage {
   private currentRoutineId = 1;
   private currentChatMessageId = 1;
   private currentPharmacyId = 1;
+  private currentQuizResultId = 1;
 
   constructor() {
     this.seedData();
@@ -365,6 +372,22 @@ export class MemStorage implements IStorage {
     };
     this.pharmacies.set(id, pharmacy);
     return pharmacy;
+  }
+
+  // Quiz Results
+  async createQuizResult(insertResult: InsertQuizResult): Promise<QuizResult> {
+    const id = this.currentQuizResultId++;
+    const result: QuizResult = {
+      ...insertResult,
+      id,
+      createdAt: new Date()
+    };
+    this.quizResults.set(id, result);
+    return result;
+  }
+
+  async getUserQuizResults(userId: number): Promise<QuizResult[]> {
+    return Array.from(this.quizResults.values()).filter(result => result.userId === userId);
   }
 }
 

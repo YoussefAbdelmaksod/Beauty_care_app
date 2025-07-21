@@ -12,6 +12,7 @@ const translations: Record<string, Translation> = {
     },
     nav: {
       home: "الرئيسية",
+      quiz: "اختبار البشرة",
       analysis: "تحليل",
       products: "المنتجات",
       chat: "محادثة",
@@ -98,6 +99,7 @@ const translations: Record<string, Translation> = {
     },
     nav: {
       home: "Home",
+      quiz: "Skin Quiz",
       analysis: "Analysis",
       products: "Products",
       chat: "Chat",

@@ -2,10 +2,105 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { analyzeImage, analyzeSentiment } from "./services/gemini";
-import { insertSkinAnalysisSchema, insertChatMessageSchema, insertRoutineSchema } from "@shared/schema";
+import { insertSkinAnalysisSchema, insertChatMessageSchema, insertRoutineSchema, insertUserSchema, insertQuizResultSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Authentication endpoints
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(409).json({ message: "User already exists" });
+      }
+      
+      const user = await storage.createUser({
+        ...userData,
+        quizCompleted: false
+      });
+      
+      res.status(201).json({ 
+        message: "User created successfully", 
+        user: { id: user.id, username: user.username, email: user.email }
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(400).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      res.json({ 
+        message: "Login successful", 
+        user: { 
+          id: user.id, 
+          username: user.username, 
+          email: user.email,
+          quizCompleted: user.quizCompleted,
+          skinType: user.skinType
+        }
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Quiz endpoints
+  app.post("/api/quiz/submit", async (req, res) => {
+    try {
+      const quizData = insertQuizResultSchema.parse(req.body);
+      
+      const result = await storage.createQuizResult(quizData);
+      
+      // Update user's skin type if userId provided
+      if (quizData.userId) {
+        await storage.updateUser(quizData.userId, {
+          skinType: quizData.skinType,
+          skinConcerns: quizData.concerns,
+          quizCompleted: true
+        });
+      }
+      
+      res.json({ 
+        message: "Quiz completed successfully",
+        result: {
+          skinType: result.skinType,
+          concerns: result.concerns,
+          score: result.score
+        }
+      });
+    } catch (error) {
+      console.error("Quiz submission error:", error);
+      res.status(400).json({ message: "Failed to submit quiz" });
+    }
+  });
+
+  app.get("/api/quiz/results/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const results = await storage.getUserQuizResults(userId);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch quiz results" });
+    }
+  });
   
   // Products endpoints
   app.get("/api/products", async (req, res) => {
