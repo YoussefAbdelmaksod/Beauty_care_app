@@ -61,6 +61,12 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        // Egyptian color palette
+        "egyptian-gold": "var(--egyptian-gold)",
+        "deep-teal": "var(--deep-teal)",
+        "cream": "var(--cream)",
+        "bronze": "var(--bronze)",
+        "warm-white": "var(--warm-white)",
       },
       keyframes: {
         "accordion-down": {

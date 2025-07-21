@@ -9,7 +9,7 @@ import { useTranslation } from "@/lib/i18n";
 import { analysisApi, productsApi, pharmaciesApi, getCurrentLocation } from "@/lib/api";
 import { 
   Camera, Edit, Globe, User, 
-  WavesLadder, Calendar, TrendingUp, MessageCircle,
+  Waves, Calendar, TrendingUp, MessageCircle,
   MapPin, Phone, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -108,7 +108,7 @@ export default function Home() {
             isRTL ? "space-x-reverse" : ""
           )}>
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <WavesLadder className="text-white text-lg" />
+              <Waves className="text-white text-lg" />
             </div>
             <div>
               <h1 className="text-xl font-bold">{t('app.title')}</h1>
