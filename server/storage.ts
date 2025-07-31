@@ -184,6 +184,8 @@ export class MemStorage implements IStorage {
     const user: User = {
       ...insertUser,
       id,
+      preferredLanguage: insertUser.preferredLanguage ?? "ar",
+      budgetTier: insertUser.budgetTier ?? "basic",
       createdAt: new Date()
     };
     this.users.set(id, user);
@@ -237,7 +239,17 @@ export class MemStorage implements IStorage {
     const id = this.currentProductId++;
     const product: Product = {
       ...insertProduct,
-      id
+      id,
+      ingredients: insertProduct.ingredients ?? null,
+      activeIngredients: insertProduct.activeIngredients ?? null,
+      skinTypes: insertProduct.skinTypes ?? null,
+      concerns: insertProduct.concerns ?? null,
+      imageUrl: insertProduct.imageUrl ?? null,
+      descriptionAr: insertProduct.descriptionAr ?? null,
+      descriptionEn: insertProduct.descriptionEn ?? null,
+      pharmacyLinks: insertProduct.pharmacyLinks ?? null,
+      effectiveness: insertProduct.effectiveness ?? null,
+      isEgyptian: insertProduct.isEgyptian ?? null
     };
     this.products.set(id, product);
     return product;
@@ -276,6 +288,13 @@ export class MemStorage implements IStorage {
     const analysis: SkinAnalysis = {
       ...insertAnalysis,
       id,
+      userId: insertAnalysis.userId ?? null,
+      imageUrl: insertAnalysis.imageUrl ?? null,
+      concerns: insertAnalysis.concerns ?? null,
+      skinType: insertAnalysis.skinType ?? null,
+      recommendations: insertAnalysis.recommendations ?? null,
+      geminiAnalysis: insertAnalysis.geminiAnalysis ?? null,
+      progressScore: insertAnalysis.progressScore ?? null,
       createdAt: new Date()
     };
     this.skinAnalyses.set(id, analysis);
@@ -305,6 +324,9 @@ export class MemStorage implements IStorage {
     const routine: Routine = {
       ...insertRoutine,
       id,
+      userId: insertRoutine.userId ?? null,
+      products: insertRoutine.products ?? null,
+      isActive: insertRoutine.isActive ?? null,
       createdAt: new Date()
     };
     this.routines.set(id, routine);
@@ -334,6 +356,10 @@ export class MemStorage implements IStorage {
     const message: ChatMessage = {
       ...insertMessage,
       id,
+      userId: insertMessage.userId ?? null,
+      response: insertMessage.response ?? null,
+      messageType: insertMessage.messageType ?? null,
+      context: insertMessage.context ?? null,
       createdAt: new Date()
     };
     this.chatMessages.set(id, message);
@@ -361,7 +387,12 @@ export class MemStorage implements IStorage {
     const id = this.currentPharmacyId++;
     const pharmacy: Pharmacy = {
       ...insertPharmacy,
-      id
+      id,
+      phone: insertPharmacy.phone ?? null,
+      location: insertPharmacy.location ?? null,
+      workingHours: insertPharmacy.workingHours ?? null,
+      hasDelivery: insertPharmacy.hasDelivery ?? null,
+      rating: insertPharmacy.rating ?? null
     };
     this.pharmacies.set(id, pharmacy);
     return pharmacy;
