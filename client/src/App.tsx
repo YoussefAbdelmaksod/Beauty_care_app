@@ -50,7 +50,7 @@ function App() {
               </Route>
             </>
           ) : (
-            <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50">
+            <div className="min-h-screen bg-gray-50">
               <MainAppWithTabs />
             </div>
           )}
