@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useState, useEffect } from "react";
 import AuthPage from "./pages/auth";
 import MainAppWithTabs from "./components/MainAppWithTabs";
+import QuizPage from "./pages/quiz-mobile";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -50,9 +51,14 @@ function App() {
               </Route>
             </>
           ) : (
-            <div className="min-h-screen bg-gray-50">
-              <MainAppWithTabs />
-            </div>
+            <>
+              <Route path="/quiz" component={QuizPage} />
+              <Route path="*">
+                <div className="min-h-screen bg-gray-50">
+                  <MainAppWithTabs />
+                </div>
+              </Route>
+            </>
           )}
           <Route>
             <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center">

@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { 
   MessageCircle, 
   ShoppingBag, 
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
+  const [, setLocation] = useLocation();
   const language = localStorage.getItem("userLanguage") || "ar";
   const userId = parseInt(localStorage.getItem("userId") || "0");
   const isRTL = language === "ar";
@@ -36,6 +38,10 @@ export default function HomePage() {
     queryKey: ["/api/products/recommended", userId],
   });
 
+  const { data: quizStatus } = useQuery({
+    queryKey: ["/api/quiz/status", userId],
+  });
+
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userId");
@@ -44,6 +50,14 @@ export default function HomePage() {
   };
 
   const quickActions = [
+    ...(quizStatus?.completed ? [] : [{
+      id: "quiz",
+      title: language === "ar" ? "استبيان البشرة" : "Skin Quiz",
+      subtitle: language === "ar" ? "احصل على توصيات مخصصة" : "Get personalized recommendations",
+      icon: Sparkles,
+      color: "from-pink-500 to-pink-600",
+      badge: language === "ar" ? "جديد" : "New"
+    }]),
     {
       id: "chat",
       title: language === "ar" ? "استشارة خبير" : "Expert Chat",
@@ -108,7 +122,15 @@ export default function HomePage() {
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
-              <Card key={action.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+              <Card 
+                key={action.id} 
+                className="border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => {
+                  if (action.id === "quiz") {
+                    setLocation("/quiz");
+                  }
+                }}
+              >
                 <CardContent className="p-4">
                   <div className="flex flex-col items-center text-center space-y-3">
                     <div className={`w-12 h-12 bg-gradient-to-br ${action.color} rounded-xl flex items-center justify-center relative`}>
