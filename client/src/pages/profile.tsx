@@ -1,395 +1,374 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { useTranslation } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  ArrowLeft, User, Globe, Bell, Moon, Sun,
-  Settings, HelpCircle, LogOut, Edit,
-  TrendingUp, Calendar, Award, Star
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { 
+  ArrowLeft, 
+  User, 
+  Edit, 
+  Save, 
+  X, 
+  Star,
+  Calendar,
+  Mail,
+  Globe,
+  Settings
+} from "lucide-react";
 
-export default function Profile() {
-  const { t, language, changeLanguage, isRTL } = useTranslation();
-  const [, navigate] = useLocation();
-  const { toast } = useToast();
-
+export default function ProfilePage() {
+  const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [editForm, setEditForm] = useState({
+    username: "",
+    email: "",
+    preferredLanguage: "ar"
+  });
   
-  // Mock user data - in real app this would come from API
-  const [userProfile, setUserProfile] = useState({
-    name: 'سارة محمد',
-    email: 'sara.mohamed@example.com',
-    phone: '+20 123 456 7890',
-    skinType: 'combination',
-    concerns: ['acne', 'dark_spots'],
-    budgetTier: 'premium',
-    joinDate: '2024-01-15'
+  const { toast } = useToast();
+  const language = localStorage.getItem("userLanguage") || "ar";
+  const userId = parseInt(localStorage.getItem("userId") || "0");
+
+  const { data: userProfile, isLoading } = useQuery({
+    queryKey: ["/api/auth/profile", userId],
+    enabled: !!userId,
   });
 
-  // Mock statistics
-  const userStats = {
-    analysesCount: 12,
-    routinesCreated: 3,
-    progressScore: 78,
-    daysActive: 45
+  const { data: quizStatus } = useQuery({
+    queryKey: ["/api/quiz/status", userId],
+    enabled: !!userId,
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: typeof editForm) => {
+      const response = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, ...data }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update profile");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/profile"] });
+      setIsEditing(false);
+      toast({
+        title: language === "ar" ? "تم التحديث" : "Updated",
+        description: language === "ar" ? "تم تحديث ملفك الشخصي بنجاح" : "Profile updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === "ar" ? "خطأ في التحديث" : "Update Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEdit = () => {
+    if (userProfile) {
+      setEditForm({
+        username: userProfile.username || "",
+        email: userProfile.email || "",
+        preferredLanguage: userProfile.preferredLanguage || "ar"
+      });
+      setIsEditing(true);
+    }
   };
 
-  const handleProfileUpdate = () => {
+  const handleSave = () => {
+    updateProfileMutation.mutate(editForm);
+  };
+
+  const handleCancel = () => {
     setIsEditing(false);
-    toast({
-      title: "تم التحديث",
-      description: "تم تحديث ملفك الشخصي بنجاح",
+    setEditForm({
+      username: "",
+      email: "",
+      preferredLanguage: "ar"
     });
   };
 
-  const handleLanguageChange = (newLang: 'ar' | 'en') => {
-    changeLanguage(newLang);
-    toast({
-      title: language === 'ar' ? "Language Changed" : "تم تغيير اللغة",
-      description: language === 'ar' ? "Language has been changed to English" : "تم تغيير اللغة إلى العربية",
-    });
+  const t = {
+    ar: {
+      title: "ملفي الشخصي",
+      back: "العودة",
+      edit: "تعديل",
+      save: "حفظ",
+      cancel: "إلغاء",
+      username: "اسم المستخدم",
+      email: "البريد الإلكتروني",
+      language: "اللغة المفضلة",
+      quizStatus: "حالة الاستبيان",
+      completed: "مكتمل",
+      notCompleted: "غير مكتمل",
+      retakeQuiz: "إعادة إجراء الاستبيان",
+      memberSince: "عضو منذ",
+      accountSettings: "إعدادات الحساب",
+      quizResults: "نتائج الاستبيان",
+      skinType: "نوع البشرة",
+      concerns: "الاهتمامات",
+      viewRecommendations: "عرض التوصيات"
+    },
+    en: {
+      title: "My Profile",
+      back: "Back",
+      edit: "Edit",
+      save: "Save",
+      cancel: "Cancel",
+      username: "Username",
+      email: "Email",
+      language: "Preferred Language",
+      quizStatus: "Quiz Status",
+      completed: "Completed",
+      notCompleted: "Not Completed",
+      retakeQuiz: "Retake Quiz",
+      memberSince: "Member since",
+      accountSettings: "Account Settings",
+      quizResults: "Quiz Results",
+      skinType: "Skin Type",
+      concerns: "Concerns",
+      viewRecommendations: "View Recommendations"
+    }
   };
 
-  const handleLogout = () => {
-    toast({
-      title: "تم تسجيل الخروج",
-      description: "نراك قريباً!",
-    });
-    // In real app, clear auth tokens and navigate to login
-    navigate('/');
-  };
+  const currentT = t[language as keyof typeof t];
 
-  const skinTypeLabels = {
-    dry: 'بشرة جافة',
-    oily: 'بشرة دهنية',
-    combination: 'بشرة مختلطة',
-    sensitive: 'بشرة حساسة',
-    normal: 'بشرة عادية'
-  };
-
-  const concernLabels = {
-    acne: 'حبوب',
-    dark_spots: 'تصبغات',
-    wrinkles: 'تجاعيد',
-    dryness: 'جفاف',
-    oil_control: 'تحكم في الدهون'
-  };
-
-  const budgetTierLabels = {
-    basic: 'أساسية',
-    premium: 'متوسطة',
-    luxury: 'عالية'
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-rose-500 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">
+            {language === "ar" ? "جاري تحميل الملف الشخصي..." : "Loading profile..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-warm-white pb-6">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50">
       {/* Header */}
-      <header className="bg-gradient-egyptian text-white px-6 py-6">
-        <div className={cn(
-          "flex items-center justify-between mb-4",
-          isRTL ? "flex-row-reverse" : ""
-        )}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/')}
-            className={cn(
-              "text-white hover:bg-white/20 flex items-center space-x-2",
-              isRTL ? "space-x-reverse" : ""
-            )}
-          >
-            <ArrowLeft className={cn("h-4 w-4", isRTL && "rotate-180")} />
-            <span>الرئيسية</span>
+      <div className="bg-white shadow-sm p-4">
+        <div className="max-w-4xl mx-auto flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setLocation("/")}>
+            <ArrowLeft className="w-4 h-4" />
+            {currentT.back}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(!isEditing)}
-            className="text-white hover:bg-white/20"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="text-center">
-          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-3">
-            <User className="h-10 w-10" />
-          </div>
-          <h1 className="text-xl font-bold mb-1">{userProfile.name}</h1>
-          <p className="text-sm opacity-90">{userProfile.email}</p>
-          <Badge className="mt-2 bg-white text-gray-800">
-            عضوة منذ {new Date(userProfile.joinDate).getFullYear()}
-          </Badge>
-        </div>
-      </header>
-
-      {/* Statistics Cards */}
-      <div className="px-6 -mt-8 relative z-10 mb-6">
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-white shadow-sm">
-            <CardContent className="p-4 text-center">
-              <TrendingUp className="h-6 w-6 egyptian-gold mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{userStats.progressScore}%</div>
-              <div className="text-xs text-gray-500">نسبة التحسن</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white shadow-sm">
-            <CardContent className="p-4 text-center">
-              <Calendar className="h-6 w-6 deep-teal mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{userStats.analysesCount}</div>
-              <div className="text-xs text-gray-500">تحليل</div>
-            </CardContent>
-          </Card>
+          <h1 className="text-xl font-bold text-gray-900 flex-1">
+            {currentT.title}
+          </h1>
+          {!isEditing && (
+            <Button variant="outline" size="sm" onClick={handleEdit}>
+              <Edit className="w-4 h-4 mr-2" />
+              {currentT.edit}
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Profile Information */}
-      <div className="px-6 space-y-6">
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Profile Info */}
         <Card>
           <CardHeader>
-            <CardTitle>المعلومات الشخصية</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-amber-500 rounded-full flex items-center justify-center">
+                <User className="w-8 h-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-2xl">
+                  {userProfile?.username || "User"}
+                </CardTitle>
+                <CardDescription className="flex items-center gap-2 mt-1">
+                  <Calendar className="w-4 h-4" />
+                  {currentT.memberSince} {new Date(userProfile?.createdAt || new Date()).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US")}
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {isEditing ? (
-              <>
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">الاسم</Label>
+                  <Label htmlFor="username">{currentT.username}</Label>
                   <Input
-                    id="name"
-                    value={userProfile.name}
-                    onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
-                    className="mt-1"
+                    id="username"
+                    value={editForm.username}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
+                    className="text-right"
                   />
                 </div>
-                
                 <div>
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
+                  <Label htmlFor="email">{currentT.email}</Label>
                   <Input
                     id="email"
                     type="email"
-                    value={userProfile.email}
-                    onChange={(e) => setUserProfile({...userProfile, email: e.target.value})}
-                    className="mt-1"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="text-right"
                   />
                 </div>
-                
                 <div>
-                  <Label htmlFor="phone">رقم الهاتف</Label>
-                  <Input
-                    id="phone"
-                    value={userProfile.phone}
-                    onChange={(e) => setUserProfile({...userProfile, phone: e.target.value})}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div className="flex space-x-2 space-x-reverse pt-4">
-                  <Button
-                    onClick={handleProfileUpdate}
-                    className="flex-1 bg-egyptian-gold hover:bg-egyptian-gold/90"
+                  <Label htmlFor="language">{currentT.language}</Label>
+                  <select
+                    id="language"
+                    value={editForm.preferredLanguage}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, preferredLanguage: e.target.value }))}
+                    className="w-full p-2 border rounded-md text-right"
                   >
-                    حفظ التغييرات
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditing(false)}
-                    className="flex-1"
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSave}
+                    disabled={updateProfileMutation.isPending}
+                    className="bg-gradient-to-r from-rose-500 to-amber-500"
                   >
-                    إلغاء
+                    <Save className="w-4 h-4 mr-2" />
+                    {currentT.save}
+                  </Button>
+                  <Button variant="outline" onClick={handleCancel}>
+                    <X className="w-4 h-4 mr-2" />
+                    {currentT.cancel}
                   </Button>
                 </div>
-              </>
+              </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">الاسم:</span>
-                  <span className="font-medium">{userProfile.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">البريد الإلكتروني:</span>
-                  <span className="font-medium">{userProfile.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">رقم الهاتف:</span>
-                  <span className="font-medium">{userProfile.phone}</span>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-500">{currentT.email}:</span>
+                    <span className="font-medium">{userProfile?.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-500">{currentT.language}:</span>
+                    <span className="font-medium">
+                      {userProfile?.preferredLanguage === "ar" ? "العربية" : "English"}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Skin Profile */}
+        {/* Quiz Status */}
         <Card>
           <CardHeader>
-            <CardTitle>ملف البشرة</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              {currentT.quizStatus}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label>نوع البشرة</Label>
-                {isEditing ? (
-                  <Select 
-                    value={userProfile.skinType} 
-                    onValueChange={(value) => setUserProfile({...userProfile, skinType: value})}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(skinTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge className="mt-1 bg-egyptian-gold text-white">
-                    {skinTypeLabels[userProfile.skinType as keyof typeof skinTypeLabels]}
-                  </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Badge 
+                  variant={quizStatus?.completed ? "default" : "secondary"}
+                  className={quizStatus?.completed ? "bg-green-500" : ""}
+                >
+                  {quizStatus?.completed ? currentT.completed : currentT.notCompleted}
+                </Badge>
+                {quizStatus?.completedAt && (
+                  <span className="text-sm text-gray-500">
+                    {new Date(quizStatus.completedAt).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US")}
+                  </span>
                 )}
               </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setLocation("/quiz")}
+                >
+                  {currentT.retakeQuiz}
+                </Button>
+                {quizStatus?.completed && (
+                  <Button 
+                    onClick={() => setLocation("/recommendations")}
+                    className="bg-gradient-to-r from-rose-500 to-amber-500"
+                  >
+                    {currentT.viewRecommendations}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <div>
-                <Label>المشاكل الحالية</Label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {userProfile.concerns.map(concern => (
-                    <Badge key={concern} variant="outline">
-                      {concernLabels[concern as keyof typeof concernLabels]}
-                    </Badge>
-                  ))}
+        {/* Quiz Results Summary */}
+        {quizStatus?.completed && quizStatus?.results && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-500" />
+                {currentT.quizResults}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">{currentT.skinType}</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {quizStatus.results.skinTypes?.map((type: string) => (
+                      <Badge key={type} variant="secondary">
+                        {language === "ar" ? getArabicSkinType(type) : type}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">{currentT.concerns}</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {quizStatus.results.concerns?.slice(0, 3).map((concern: string) => (
+                      <Badge key={concern} variant="outline">
+                        {language === "ar" ? getArabicConcern(concern) : concern}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
-
-              <div>
-                <Label>فئة الميزانية</Label>
-                <div className="mt-1">
-                  <Badge className="bg-deep-teal text-white">
-                    {budgetTierLabels[userProfile.budgetTier as keyof typeof budgetTierLabels]}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* App Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>إعدادات التطبيق</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <Globe className="h-5 w-5 text-gray-500" />
-                <span>اللغة</span>
-              </div>
-              <Select value={language} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ar">العربية</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <Bell className="h-5 w-5 text-gray-500" />
-                <span>الإشعارات</span>
-              </div>
-              <Switch
-                checked={notificationsEnabled}
-                onCheckedChange={setNotificationsEnabled}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                {isDarkMode ? <Moon className="h-5 w-5 text-gray-500" /> : <Sun className="h-5 w-5 text-gray-500" />}
-                <span>الوضع الليلي</span>
-              </div>
-              <Switch
-                checked={isDarkMode}
-                onCheckedChange={setIsDarkMode}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>إجراءات سريعة</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={() => navigate('/analysis')}
-            >
-              <TrendingUp className="h-5 w-5 mr-3" />
-              عرض تقدم البشرة
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={() => navigate('/products')}
-            >
-              <Award className="h-5 w-5 mr-3" />
-              المنتجات المفضلة
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-            >
-              <HelpCircle className="h-5 w-5 mr-3" />
-              المساعدة والدعم
-            </Button>
-            
-            <Separator />
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5 mr-3" />
-              تسجيل الخروج
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Achievement Badge */}
-        <Card className="bg-gradient-to-r from-egyptian-gold to-amber-400 text-white">
-          <CardContent className="p-4 text-center">
-            <Star className="h-8 w-8 mx-auto mb-2" />
-            <h3 className="font-semibold mb-1">محبة العناية بالبشرة</h3>
-            <p className="text-sm opacity-90">
-              أكملت {userStats.daysActive} يوم من العناية المستمرة!
-            </p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
+}
+
+function getArabicSkinType(type: string): string {
+  const translations: Record<string, string> = {
+    "oily": "دهنية",
+    "dry": "جافة",
+    "combination": "مختلطة",
+    "normal": "طبيعية",
+    "sensitive": "حساسة"
+  };
+  return translations[type.toLowerCase()] || type;
+}
+
+function getArabicConcern(concern: string): string {
+  const translations: Record<string, string> = {
+    "acne": "حب الشباب",
+    "hyperpigmentation": "فرط التصبغ",
+    "dryness": "الجفاف",
+    "aging": "الشيخوخة",
+    "pores": "المسام الواسعة"
+  };
+  return translations[concern.toLowerCase()] || concern;
 }

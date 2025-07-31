@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import authRoutes from "./routes/auth";
 import quizRoutes from "./routes/quiz";
+import chatRoutes from "./routes/chat";
+import productRoutes from "./routes/products";
 import { analyzeImage, analyzeSentiment } from "./services/gemini";
 import { AnalysisEngine } from "./services/analysis-engine";
 import { RecommendationEngine } from "./services/recommendation-engine";
@@ -25,24 +27,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Quiz routes
   app.use("/api/quiz", quizRoutes);
+
+  // Chat routes
+  app.use("/api/chat", chatRoutes);
+
+  // Product routes  
+  app.use("/api/products", productRoutes);
   
-  // Products endpoints
-  app.get("/api/products", async (req, res) => {
-    try {
-      const { category, skinTypes, concerns, budgetMax } = req.query;
-      const filters = {
-        category: category as string,
-        skinTypes: skinTypes ? (skinTypes as string).split(",") : undefined,
-        concerns: concerns ? (concerns as string).split(",") : undefined,
-        budgetMax: budgetMax ? parseFloat(budgetMax as string) : undefined,
-      };
-      
-      const products = await storage.getProducts(filters);
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch products" });
-    }
-  });
+  // Products endpoints - moved after the route mounting to prevent conflicts
+  // (These will be accessible through the productRoutes instead)
 
   app.get("/api/products/search", async (req, res) => {
     try {

@@ -43,7 +43,18 @@ export interface IStorage {
 
   // Chat Messages
   getChatMessages(userId: number): Promise<ChatMessage[]>;
+  getChatHistory(userId: number): Promise<ChatMessage[]>;
+  getRecentChats(userId: number, limit: number): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+
+  // Products Extended
+  getProductCategories(): Promise<string[]>;
+  getRecommendedProducts(userId: number): Promise<Product[]>;
+  getProductsByIds(ids: number[]): Promise<Product[]>;
+  
+  // Favorites
+  addToFavorites(userId: number, productId: number): Promise<any>;
+  getUserFavorites(userId: number): Promise<Product[]>;
 
   // Pharmacies
   getNearbyPharmacies(lat: number, lng: number, radius?: number): Promise<Pharmacy[]>;
@@ -362,6 +373,19 @@ export class MemStorage implements IStorage {
     return Array.from(this.chatMessages.values()).filter(message => message.userId === userId);
   }
 
+  async getChatHistory(userId: number): Promise<ChatMessage[]> {
+    return Array.from(this.chatMessages.values())
+      .filter(msg => msg.userId === userId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  async getRecentChats(userId: number, limit: number): Promise<ChatMessage[]> {
+    return Array.from(this.chatMessages.values())
+      .filter(msg => msg.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+  }
+
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
     const id = this.currentChatMessageId++;
     const message: ChatMessage = {
@@ -375,6 +399,31 @@ export class MemStorage implements IStorage {
     };
     this.chatMessages.set(id, message);
     return message;
+  }
+
+  // Products Extended
+  async getProductCategories(): Promise<string[]> {
+    const categories = Array.from(this.products.values()).map(p => p.category);
+    return [...new Set(categories)];
+  }
+
+  async getRecommendedProducts(userId: number): Promise<Product[]> {
+    // Return first 10 products as recommendations (in real app, this would be based on user profile)
+    return Array.from(this.products.values()).slice(0, 10);
+  }
+
+  async getProductsByIds(ids: number[]): Promise<Product[]> {
+    return ids.map(id => this.products.get(id)).filter(Boolean) as Product[];
+  }
+  
+  // Favorites
+  async addToFavorites(userId: number, productId: number): Promise<any> {
+    return { userId, productId, id: Date.now() };
+  }
+
+  async getUserFavorites(userId: number): Promise<Product[]> {
+    // Return empty array for now (in real app, this would query favorites table)
+    return [];
   }
 
   // Pharmacies

@@ -1,481 +1,299 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ProductCard } from "@/components/product-card";
-import { CameraModal } from "@/components/camera-modal";
-import { useTranslation } from "@/lib/i18n";
-import { analysisApi, productsApi, pharmaciesApi, getCurrentLocation } from "@/lib/api";
-import { 
-  Camera, Edit, Globe, User, 
-  Waves, Calendar, TrendingUp, MessageCircle,
-  MapPin, Phone, ChevronRight
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { 
+  MessageCircle, 
+  ShoppingCart, 
+  Star, 
+  User, 
+  BarChart3, 
+  Heart, 
+  Search,
+  LogOut,
+  Sparkles
+} from "lucide-react";
 
-export default function Home() {
-  const { t, language, changeLanguage, isRTL } = useTranslation();
-  const [, navigate] = useLocation();
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [selectedBudgetTier, setSelectedBudgetTier] = useState<string>('basic');
+export default function HomePage() {
+  const [, setLocation] = useLocation();
+  const [language, setLanguage] = useState(localStorage.getItem("userLanguage") || "ar");
+  const userId = parseInt(localStorage.getItem("userId") || "0");
 
-  // Fetch recommended products
-  const { data: products = [] } = useQuery({
-    queryKey: ['/api/products'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  const { data: userProfile } = useQuery({
+    queryKey: ["/api/auth/profile", userId],
+    enabled: !!userId,
   });
 
-  // Fetch recent analyses for user (mock user ID = 1)
-  const { data: recentAnalyses = [] } = useQuery({
-    queryKey: ['/api/analysis', 1],
-    staleTime: 2 * 60 * 1000, // 2 minutes
+  const { data: recentChats } = useQuery({
+    queryKey: ["/api/chat/recent", userId],
+    enabled: !!userId,
   });
 
-  // Fetch nearby pharmacies
-  const { data: nearbyPharmacies = [] } = useQuery({
-    queryKey: ['/api/pharmacies'],
-    queryFn: async () => {
-      try {
-        const location = await getCurrentLocation();
-        return pharmaciesApi.getNearby(location.lat, location.lng, 10);
-      } catch {
-        // Fallback to all pharmacies if location fails
-        return pharmaciesApi.getAll();
-      }
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+  const { data: recommendedProducts } = useQuery({
+    queryKey: ["/api/products/recommended", userId],
+    enabled: !!userId,
   });
 
-  const budgetTiers = [
-    { 
-      key: 'basic', 
-      nameKey: 'budget.basic', 
-      rangeKey: 'budget.basicRange' 
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userLanguage");
+    window.location.reload();
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === "ar" ? "en" : "ar";
+    setLanguage(newLang);
+    localStorage.setItem("userLanguage", newLang);
+  };
+
+  const t = {
+    ar: {
+      welcome: "مرحباً",
+      subtitle: "كيف يمكنني مساعدتك اليوم؟",
+      chatWithAI: "تحدث مع خبير العناية",
+      exploreProducts: "استكشف المنتجات",
+      compareProducts: "قارن المنتجات",
+      myProfile: "ملفي الشخصي",
+      recentChats: "المحادثات الأخيرة",
+      recommendedForYou: "موصى لك",
+      viewAll: "عرض الكل",
+      noChats: "لا توجد محادثات سابقة",
+      startFirstChat: "ابدأ محادثتك الأولى",
+      logout: "تسجيل الخروج",
+      language: "English",
+      retakeQuiz: "إعادة إجراء الاستبيان",
+      skinAnalysis: "تحليل البشرة"
     },
-    { 
-      key: 'premium', 
-      nameKey: 'budget.premium', 
-      rangeKey: 'budget.premiumRange' 
-    },
-    { 
-      key: 'luxury', 
-      nameKey: 'budget.luxury', 
-      rangeKey: 'budget.luxuryRange' 
-    }
-  ];
-
-  const handleCameraCapture = async (imageData: string) => {
-    try {
-      const result = await analysisApi.analyzeImage({
-        imageData,
-        userId: 1
-      });
-      
-      // Navigate to analysis results
-      navigate(`/analysis?result=${result.analysis.id}`);
-    } catch (error) {
-      console.error('Analysis failed:', error);
+    en: {
+      welcome: "Welcome",
+      subtitle: "How can I help you today?",
+      chatWithAI: "Chat with AI Expert",
+      exploreProducts: "Explore Products",
+      compareProducts: "Compare Products", 
+      myProfile: "My Profile",
+      recentChats: "Recent Chats",
+      recommendedForYou: "Recommended for You",
+      viewAll: "View All",
+      noChats: "No previous chats",
+      startFirstChat: "Start your first chat",
+      logout: "Logout",
+      language: "العربية",
+      retakeQuiz: "Retake Quiz",
+      skinAnalysis: "Skin Analysis"
     }
   };
 
-  const handleTextAnalysis = () => {
-    navigate('/analysis?mode=text');
-  };
-
-  const handlePharmacyCall = (phone: string) => {
-    window.location.href = `tel:${phone}`;
-  };
-
-  const handlePharmacyDirections = (pharmacy: any) => {
-    if (pharmacy.location) {
-      const { lat, lng } = pharmacy.location;
-      window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank');
-    }
-  };
+  const currentT = t[language as keyof typeof t];
 
   return (
-    <div className="min-h-screen bg-warm-white">
-      {/* Header Section */}
-      <header className="gradient-egyptian text-white px-6 py-4 relative">
-        <div className={cn(
-          "flex items-center justify-between mb-4",
-          isRTL ? "flex-row-reverse" : ""
-        )}>
-          <div className={cn(
-            "flex items-center space-x-3",
-            isRTL ? "space-x-reverse" : ""
-          )}>
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <Waves className="text-white text-lg" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">{t('app.title')}</h1>
-              <p className="text-sm opacity-90">{t('app.subtitle')}</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {currentT.welcome} {userProfile?.username || ""}! 
+            </h1>
+            <p className="text-gray-600 mt-1">{currentT.subtitle}</p>
           </div>
-          <div className={cn(
-            "flex items-center space-x-2",
-            isRTL ? "space-x-reverse" : ""
-          )}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => changeLanguage(language === 'ar' ? 'en' : 'ar')}
-              className="w-8 h-8 bg-white bg-opacity-20 rounded-full p-0 text-white hover:bg-white/30"
-            >
-              <Globe className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={toggleLanguage}>
+              {currentT.language}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/profile')}
-              className="w-8 h-8 bg-white bg-opacity-20 rounded-full p-0 text-white hover:bg-white/30"
-            >
-              <User className="h-4 w-4" />
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+              {currentT.logout}
             </Button>
           </div>
         </div>
-        
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">
-            {t('home.welcome')}، <span>سارة</span>
-          </h2>
-          <p className="text-sm opacity-90">{t('home.subtitle')}</p>
+
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-br from-blue-500 to-purple-600 text-white border-0"
+            onClick={() => setLocation("/chat")}
+          >
+            <CardContent className="p-4 text-center">
+              <MessageCircle className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">{currentT.chatWithAI}</p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-br from-green-500 to-teal-600 text-white border-0"
+            onClick={() => setLocation("/products")}
+          >
+            <CardContent className="p-4 text-center">
+              <Search className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">{currentT.exploreProducts}</p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-br from-orange-500 to-red-600 text-white border-0"
+            onClick={() => setLocation("/compare")}
+          >
+            <CardContent className="p-4 text-center">
+              <BarChart3 className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">{currentT.compareProducts}</p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-br from-rose-500 to-pink-600 text-white border-0"
+            onClick={() => setLocation("/profile")}
+          >
+            <CardContent className="p-4 text-center">
+              <User className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">{currentT.myProfile}</p>
+            </CardContent>
+          </Card>
         </div>
-      </header>
 
-      {/* Quick Analysis Card */}
-      <div className="px-6 -mt-6 relative z-10">
-        <Card className="border-egyptian-gold border-opacity-20">
-          <CardContent className="p-6">
-            <div className={cn(
-              "flex items-center justify-between mb-4",
-              isRTL ? "flex-row-reverse" : ""
-            )}>
-              <h3 className="text-lg font-semibold text-gray-800">
-                {t('home.quickAnalysis')}
-              </h3>
-              <div className="w-6 h-6 bg-egyptian-gold bg-opacity-20 rounded-full flex items-center justify-center">
-                <Camera className="text-yellow-600 text-xs" />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setIsCameraOpen(true)}
-                className={cn(
-                  "group h-auto p-4 border-2 hover:border-egyptian-gold transition-all duration-300",
-                  "bg-gradient-to-br from-cream to-white"
-                )}
-              >
-                <div className="text-center space-y-2">
-                  <div className="w-12 h-12 bg-egyptian-gold bg-opacity-10 rounded-full flex items-center justify-center mx-auto group-hover:pulse-glow">
-                    <Camera className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      {t('home.photoAnalysis')}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('home.photoSubtitle')}
-                    </p>
-                  </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Recent Chats */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-blue-500" />
+                {currentT.recentChats}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentChats && recentChats.length > 0 ? (
+                <div className="space-y-3">
+                  {recentChats.slice(0, 3).map((chat: any) => (
+                    <div 
+                      key={chat.id}
+                      className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => setLocation("/chat")}
+                    >
+                      <p className="text-sm text-gray-700 line-clamp-2">
+                        {chat.message}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(chat.createdAt).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US")}
+                      </p>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => setLocation("/chat")}
+                  >
+                    {currentT.viewAll}
+                  </Button>
                 </div>
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={handleTextAnalysis}
-                className={cn(
-                  "group h-auto p-4 border-2 hover:border-egyptian-gold transition-all duration-300",
-                  "bg-gradient-to-br from-cream to-white"
-                )}
-              >
-                <div className="text-center space-y-2">
-                  <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto group-hover:pulse-glow">
-                    <Edit className="h-6 w-6 deep-teal" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      {t('home.textAnalysis')}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('home.textSubtitle')}
-                    </p>
-                  </div>
+              ) : (
+                <div className="text-center py-6">
+                  <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm mb-3">{currentT.noChats}</p>
+                  <Button 
+                    onClick={() => setLocation("/chat")}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600"
+                  >
+                    {currentT.startFirstChat}
+                  </Button>
                 </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Recent Analyses */}
-      {recentAnalyses.length > 0 && (
-        <div className="px-6 mt-6">
-          <div className={cn(
-            "flex items-center justify-between mb-4",
-            isRTL ? "flex-row-reverse" : ""
-          )}>
-            <h3 className="text-lg font-semibold text-gray-800">
-              {t('home.recentAnalyses')}
-            </h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/analysis')}
-              className="text-yellow-600 hover:text-yellow-700"
-            >
-              {t('home.viewAll')}
-            </Button>
-          </div>
-          
-          <div className="space-y-3">
-            {recentAnalyses.slice(0, 2).map((analysis) => (
-              <Card key={analysis.id} className="border-gray-100">
-                <CardContent className="p-4">
-                  <div className={cn(
-                    "flex items-center space-x-3",
-                    isRTL ? "space-x-reverse" : ""
-                  )}>
-                    <img
-                      src="https://images.unsplash.com/photo-1583001931096-959e9a1a6223?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
-                      alt="Skin analysis"
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800">
-                        {analysis.concerns?.join('، ') || 'تحليل البشرة'}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(analysis.createdAt!).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
-                      </p>
-                      <div className="flex items-center mt-1">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+          {/* Recommended Products */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                {currentT.recommendedForYou}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recommendedProducts && recommendedProducts.length > 0 ? (
+                <div className="space-y-3">
+                  {recommendedProducts.slice(0, 3).map((product: any) => (
+                    <div 
+                      key={product.id}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => setLocation(`/products/${product.id}`)}
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-br from-rose-100 to-amber-100 rounded-lg flex items-center justify-center">
+                        <ShoppingCart className="w-6 h-6 text-rose-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          {language === "ar" ? product.nameAr || product.name : product.name}
+                        </h4>
+                        <p className="text-xs text-gray-500">{product.brand}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm font-bold text-rose-600">
+                            {product.price} EGP
+                          </span>
+                          {product.rating && (
+                            <div className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-amber-500 fill-current" />
+                              <span className="text-xs text-gray-600">{product.rating}</span>
+                            </div>
+                          )}
                         </div>
-                        <span className="text-xs text-gray-500 mr-2">
-                          تحسن {analysis.progressScore}%
-                        </span>
                       </div>
                     </div>
-                    <ChevronRight className={cn(
-                      "h-4 w-4 text-gray-400",
-                      isRTL && "rotate-180"
-                    )} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => setLocation("/products")}
+                  >
+                    {currentT.viewAll}
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm mb-3">
+                    {language === "ar" 
+                      ? "أكمل الاستبيان أولاً للحصول على توصيات مخصصة" 
+                      : "Complete the quiz first to get personalized recommendations"}
+                  </p>
+                  <Button 
+                    onClick={() => setLocation("/quiz")}
+                    className="bg-gradient-to-r from-rose-500 to-amber-500"
+                  >
+                    {currentT.retakeQuiz}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
 
-      {/* Product Recommendations */}
-      <div className="px-6 mt-6">
-        <div className={cn(
-          "flex items-center justify-between mb-4",
-          isRTL ? "flex-row-reverse" : ""
-        )}>
-          <h3 className="text-lg font-semibold text-gray-800">
-            {t('home.recommendedProducts')}
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/products')}
-            className="text-yellow-600 hover:text-yellow-700"
+        {/* Quick Links */}
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          <Button 
+            variant="outline" 
+            className="h-auto p-4 flex flex-col items-center gap-2"
+            onClick={() => setLocation("/analysis")}
           >
-            {t('home.store')}
+            <BarChart3 className="w-6 h-6 text-purple-600" />
+            <span className="text-sm">{currentT.skinAnalysis}</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="h-auto p-4 flex flex-col items-center gap-2"
+            onClick={() => setLocation("/favorites")}
+          >
+            <Heart className="w-6 h-6 text-red-500" />
+            <span className="text-sm">
+              {language === "ar" ? "المفضلة" : "Favorites"}
+            </span>
           </Button>
         </div>
-        
-        <div className={cn(
-          "flex space-x-4 overflow-x-auto pb-4",
-          isRTL ? "space-x-reverse" : ""
-        )}>
-          {products.slice(0, 5).map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              variant="compact"
-              className="fade-in"
-            />
-          ))}
-        </div>
       </div>
-
-      {/* Feature Buttons */}
-      <div className="px-6 mt-6 grid grid-cols-2 gap-4">
-        <Button
-          onClick={() => navigate('/analysis?mode=routine')}
-          className="bg-deep-teal text-white p-4 rounded-xl hover:bg-opacity-90 transition-all h-auto"
-        >
-          <div className={cn(
-            "flex items-center space-x-3",
-            isRTL ? "space-x-reverse flex-row-reverse" : ""
-          )}>
-            <Calendar className="h-6 w-6" />
-            <div className="text-right">
-              <p className="font-semibold">{t('home.buildRoutine')}</p>
-              <p className="text-sm opacity-90">{t('home.morningEvening')}</p>
-            </div>
-          </div>
-        </Button>
-        
-        <Button
-          onClick={() => navigate('/analysis?mode=progress')}
-          className="bg-bronze text-white p-4 rounded-xl hover:bg-opacity-90 transition-all h-auto"
-        >
-          <div className={cn(
-            "flex items-center space-x-3",
-            isRTL ? "space-x-reverse flex-row-reverse" : ""
-          )}>
-            <TrendingUp className="h-6 w-6" />
-            <div className="text-right">
-              <p className="font-semibold">{t('home.trackProgress')}</p>
-              <p className="text-sm opacity-90">{t('home.beforeAfter')}</p>
-            </div>
-          </div>
-        </Button>
-      </div>
-
-      {/* Expert Chat Section */}
-      <div className="px-6 mt-6">
-        <Card className="gradient-egyptian text-white">
-          <CardContent className="p-4">
-            <div className={cn(
-              "flex items-center justify-between",
-              isRTL ? "flex-row-reverse" : ""
-            )}>
-              <div>
-                <h3 className="font-semibold mb-1">{t('home.freeConsultation')}</h3>
-                <p className="text-sm opacity-90">{t('home.askAboutProduct')}</p>
-              </div>
-              <Button
-                onClick={() => navigate('/chat')}
-                variant="secondary"
-                className="bg-white bg-opacity-20 rounded-full w-12 h-12 p-0 text-white hover:bg-white/30"
-              >
-                <MessageCircle className="h-6 w-6" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Budget Tier Selector */}
-      <div className="px-6 mt-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          {t('home.chooseBudget')}
-        </h3>
-        <div className="space-y-3">
-          {budgetTiers.map((tier) => (
-            <Button
-              key={tier.key}
-              variant="outline"
-              onClick={() => setSelectedBudgetTier(tier.key)}
-              className={cn(
-                "w-full p-4 h-auto justify-between transition-all",
-                selectedBudgetTier === tier.key 
-                  ? "border-egyptian-gold bg-yellow-50" 
-                  : "border-gray-200 hover:border-egyptian-gold"
-              )}
-            >
-              <div className="text-left">
-                <h4 className="font-medium text-gray-800">{t(tier.nameKey)}</h4>
-                <p className="text-sm text-gray-500">{t(tier.rangeKey)}</p>
-              </div>
-              <div className={cn(
-                "w-5 h-5 border-2 rounded-full",
-                selectedBudgetTier === tier.key
-                  ? "border-yellow-600 bg-yellow-600"
-                  : "border-gray-300"
-              )}>
-                {selectedBudgetTier === tier.key && (
-                  <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                )}
-              </div>
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Nearby Pharmacies */}
-      <div className="px-6 mt-6 mb-8">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          {t('home.nearbyPharmacies')}
-        </h3>
-        <div className="space-y-3">
-          {nearbyPharmacies.slice(0, 3).map((pharmacy) => (
-            <Card key={pharmacy.id} className="border-gray-100">
-              <CardContent className="p-4">
-                <div className={cn(
-                  "flex items-center justify-between",
-                  isRTL ? "flex-row-reverse" : ""
-                )}>
-                  <div className={cn(
-                    "flex items-center space-x-3",
-                    isRTL ? "space-x-reverse" : ""
-                  )}>
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <MapPin className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-800">{pharmacy.name}</h4>
-                      <p className="text-sm text-gray-500">500 متر</p>
-                    </div>
-                  </div>
-                  <div className={cn(
-                    "flex items-center space-x-2",
-                    isRTL ? "space-x-reverse" : ""
-                  )}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePharmacyCall(pharmacy.phone || '')}
-                      className="text-yellow-600 hover:text-yellow-700 p-2"
-                    >
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePharmacyDirections(pharmacy)}
-                      className="text-teal-600 hover:text-teal-700 p-2"
-                    >
-                      <MapPin className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Floating Action Button */}
-      <Button
-        onClick={() => setIsCameraOpen(true)}
-        className={cn(
-          "fixed w-14 h-14 bg-egyptian-gold rounded-full shadow-lg text-white hover:shadow-xl transition-all pulse-glow z-30",
-          isRTL ? "bottom-20 right-6" : "bottom-20 left-6"
-        )}
-      >
-        <Camera className="h-6 w-6" />
-      </Button>
-
-      {/* Camera Modal */}
-      <CameraModal
-        isOpen={isCameraOpen}
-        onClose={() => setIsCameraOpen(false)}
-        onCapture={handleCameraCapture}
-      />
     </div>
   );
 }
