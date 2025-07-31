@@ -84,8 +84,20 @@ export class MemStorage implements IStorage {
   }
 
   private seedData() {
-    // Seed Egyptian products
+    // Sample user
+    this.users.set(1, {
+      id: 1,
+      username: "user123",
+      email: "test@example.com",
+      passwordHash: "$2b$10$...", // This would be a real hash
+      preferredLanguage: "ar",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Enhanced Egyptian and international skincare products
     const egyptianProducts: InsertProduct[] = [
+      // Egyptian local brands
       {
         nameAr: "سيروم النياسيناميد من راشيل",
         nameEn: "Rachel Niacinamide Serum",
@@ -143,6 +155,106 @@ export class MemStorage implements IStorage {
         ],
         effectiveness: 78,
         isEgyptian: true
+      },
+      // International brands available in Egypt
+      {
+        nameAr: "سيروم فيتامين سي من ذا أورديناري",
+        nameEn: "The Ordinary Vitamin C Suspension 23% + HA Spheres 2%",
+        brand: "The Ordinary",
+        category: "serum",
+        price: "680.00",
+        ingredients: ["L-Ascorbic Acid", "Hyaluronic Acid", "Silica"],
+        activeIngredients: ["L-Ascorbic Acid 23%", "Hyaluronic Acid 2%"],
+        skinTypes: ["normal", "combination", "oily"],
+        concerns: ["hyperpigmentation", "dullness", "aging"],
+        imageUrl: "https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
+        descriptionAr: "سيروم فيتامين سي عالي التركيز لتفتيح البشرة ومحاربة علامات التقدم في السن",
+        descriptionEn: "High-concentration vitamin C serum for brightening and anti-aging",
+        pharmacyLinks: [
+          { name: "العزبي فارم", phone: "01234567891", delivery: true },
+          { name: "صيدلية 19011", phone: "19011", delivery: true }
+        ],
+        effectiveness: 92,
+        isEgyptian: false
+      },
+      {
+        nameAr: "كريم الترطيب من سيرافي",
+        nameEn: "CeraVe Daily Moisturizing Lotion",
+        brand: "CeraVe",
+        category: "moisturizer",
+        price: "750.00",
+        ingredients: ["ceramides", "hyaluronic acid", "dimethicone", "glycerin"],
+        activeIngredients: ["Ceramides 1-3-6", "Hyaluronic Acid"],
+        skinTypes: ["dry", "normal", "sensitive"],
+        concerns: ["dryness", "barrier repair", "dehydration"],
+        imageUrl: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
+        descriptionAr: "مرطب يومي بالسيراميد لتقوية حاجز البشرة الطبيعي",
+        descriptionEn: "Daily moisturizer with ceramides to restore the natural skin barrier",
+        pharmacyLinks: [
+          { name: "العزبي فارم", phone: "01234567891", delivery: true },
+          { name: "صيدلية الدكتور", phone: "01234567892", delivery: false }
+        ],
+        effectiveness: 88,
+        isEgyptian: false
+      },
+      {
+        nameAr: "واقي الشمس من لاروش بوزيه",
+        nameEn: "La Roche-Posay Anthelios Ultra Fluid SPF 60",
+        brand: "La Roche-Posay",
+        category: "sunscreen",
+        price: "950.00",
+        ingredients: ["avobenzone", "homosalate", "octisalate", "octocrylene"],
+        activeIngredients: ["SPF 60", "UVA Protection"],
+        skinTypes: ["all", "sensitive"],
+        concerns: ["sun protection", "aging prevention"],
+        imageUrl: "https://images.unsplash.com/photo-1556227702-d1e0e7259de0?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
+        descriptionAr: "واقي شمس خفيف القوام مع حماية عالية من أشعة الشمس الضارة",
+        descriptionEn: "Lightweight sunscreen with high protection against harmful UV rays",
+        pharmacyLinks: [
+          { name: "العزبي فارم", phone: "01234567891", delivery: true },
+          { name: "صيدلية 19011", phone: "19011", delivery: true }
+        ],
+        effectiveness: 95,
+        isEgyptian: false
+      },
+      {
+        nameAr: "ماسك الطين المغربي من فارماسيرز",
+        nameEn: "Pharmaceres Moroccan Clay Mask",
+        brand: "فارماسيرز - Pharmaceres",
+        category: "mask",
+        price: "180.00",
+        ingredients: ["Moroccan Clay", "Aloe Vera", "Tea Tree Oil"],
+        activeIngredients: ["Moroccan Clay 25%", "Tea Tree Oil 3%"],
+        skinTypes: ["oily", "combination", "acne-prone"],
+        concerns: ["acne", "excess oil", "blackheads"],
+        imageUrl: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
+        descriptionAr: "ماسك الطين المغربي الطبيعي لتنظيف المسام العميق",
+        descriptionEn: "Natural Moroccan clay mask for deep pore cleansing",
+        pharmacyLinks: [
+          { name: "صيدلية السلام", phone: "01234567890", delivery: false },
+          { name: "صيدلية الشروق", phone: "01234567893", delivery: true }
+        ],
+        effectiveness: 82,
+        isEgyptian: true
+      },
+      {
+        nameAr: "تونر حمض الساليسيليك من بولا تشويس",
+        nameEn: "Paula's Choice SKIN PERFECTING 2% BHA Liquid Exfoliant",
+        brand: "Paula's Choice",
+        category: "toner",
+        price: "1200.00",
+        ingredients: ["Salicylic Acid", "Green Tea Extract", "Methylpropanediol"],
+        activeIngredients: ["Salicylic Acid 2%"],
+        skinTypes: ["oily", "combination", "acne-prone"],
+        concerns: ["acne", "blackheads", "enlarged pores"],
+        imageUrl: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
+        descriptionAr: "مقشر كيميائي لطيف يحتوي على حمض الساليسيليك لمحاربة الحبوب",
+        descriptionEn: "Gentle chemical exfoliant with salicylic acid to fight acne",
+        pharmacyLinks: [
+          { name: "صيدلية 19011", phone: "19011", delivery: true }
+        ],
+        effectiveness: 89,
+        isEgyptian: false
       }
     ];
 

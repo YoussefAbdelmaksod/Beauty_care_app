@@ -4,13 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { useState, useEffect } from "react";
 import AuthPage from "./pages/auth";
-import HomePage from "./pages/home";
-import QuizPage from "./pages/quiz";
-import RecommendationsPage from "./pages/recommendations";
-import ChatPage from "./pages/chat";
-import ProductsPage from "./pages/products";
-import ComparePage from "./pages/compare";
-import ProfilePage from "./pages/profile";
+import MainAppWithTabs from "./components/MainAppWithTabs";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,16 +50,9 @@ function App() {
               </Route>
             </>
           ) : (
-            <>
-              <Route path="/" component={HomePage} />
-              <Route path="/home" component={HomePage} />
-              <Route path="/quiz" component={QuizPage} />
-              <Route path="/recommendations" component={RecommendationsPage} />
-              <Route path="/chat" component={ChatPage} />
-              <Route path="/products" component={ProductsPage} />
-              <Route path="/compare" component={ComparePage} />
-              <Route path="/profile" component={ProfilePage} />
-            </>
+            <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50">
+              <MainAppWithTabs />
+            </div>
           )}
           <Route>
             <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center">
