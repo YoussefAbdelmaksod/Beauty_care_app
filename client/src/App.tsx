@@ -10,8 +10,6 @@ import Analysis from "@/pages/analysis";
 import Products from "@/pages/products";
 import Chat from "@/pages/chat";
 import Profile from "@/pages/profile";
-import Login from "@/pages/login";
-import Quiz from "@/pages/quiz";
 
 function Router() {
   return (
@@ -21,8 +19,6 @@ function Router() {
       <div className="pb-20">
         <Switch>
           <Route path="/" component={Home} />
-          <Route path="/login" component={Login} />
-          <Route path="/quiz" component={Quiz} />
           <Route path="/analysis" component={Analysis} />
           <Route path="/products" component={Products} />
           <Route path="/chat" component={Chat} />

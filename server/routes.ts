@@ -2,105 +2,21 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { analyzeImage, analyzeSentiment } from "./services/gemini";
-import { insertSkinAnalysisSchema, insertChatMessageSchema, insertRoutineSchema, insertUserSchema, insertQuizResultSchema } from "@shared/schema";
+import { AnalysisEngine } from "./services/analysis-engine";
+import { RecommendationEngine } from "./services/recommendation-engine";
+import { ChatSupportEngine } from "./services/chat-engine";
+import { ProgressTrackingEngine } from "./services/progress-tracking";
+import { insertSkinAnalysisSchema, insertChatMessageSchema, insertRoutineSchema } from "@shared/schema";
 import { z } from "zod";
 
+// Initialize service engines
+const apiKey = process.env.GEMINI_API_KEY || "";
+const analysisEngine = new AnalysisEngine(apiKey);
+const recommendationEngine = new RecommendationEngine(apiKey);
+const chatEngine = new ChatSupportEngine(apiKey);
+const progressEngine = new ProgressTrackingEngine();
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  
-  // Authentication endpoints
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser) {
-        return res.status(409).json({ message: "User already exists" });
-      }
-      
-      const user = await storage.createUser({
-        ...userData,
-        quizCompleted: false
-      });
-      
-      res.status(201).json({ 
-        message: "User created successfully", 
-        user: { id: user.id, username: user.username, email: user.email }
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(400).json({ message: "Registration failed" });
-    }
-  });
-
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password required" });
-      }
-      
-      const user = await storage.getUserByEmail(email);
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      res.json({ 
-        message: "Login successful", 
-        user: { 
-          id: user.id, 
-          username: user.username, 
-          email: user.email,
-          quizCompleted: user.quizCompleted,
-          skinType: user.skinType
-        }
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Login failed" });
-    }
-  });
-
-  // Quiz endpoints
-  app.post("/api/quiz/submit", async (req, res) => {
-    try {
-      const quizData = insertQuizResultSchema.parse(req.body);
-      
-      const result = await storage.createQuizResult(quizData);
-      
-      // Update user's skin type if userId provided
-      if (quizData.userId) {
-        await storage.updateUser(quizData.userId, {
-          skinType: quizData.skinType,
-          skinConcerns: quizData.concerns,
-          quizCompleted: true
-        });
-      }
-      
-      res.json({ 
-        message: "Quiz completed successfully",
-        result: {
-          skinType: result.skinType,
-          concerns: result.concerns,
-          score: result.score
-        }
-      });
-    } catch (error) {
-      console.error("Quiz submission error:", error);
-      res.status(400).json({ message: "Failed to submit quiz" });
-    }
-  });
-
-  app.get("/api/quiz/results/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const results = await storage.getUserQuizResults(userId);
-      res.json(results);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch quiz results" });
-    }
-  });
   
   // Products endpoints
   app.get("/api/products", async (req, res) => {
@@ -149,114 +65,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Skin analysis endpoints
+  // Enhanced Skin Analysis endpoints using new Analysis Engine
   app.post("/api/analysis/image", async (req, res) => {
     try {
-      const { imageData, userId, concerns } = req.body;
+      const { imageData, userId, concerns, analysisType, existingConditions } = req.body;
       
       if (!imageData) {
         return res.status(400).json({ message: "Image data is required" });
       }
 
-      // Analyze image with Gemini
-      const prompt = `Analyze this skin photo and provide detailed information about:
-      1. Skin type (dry, oily, combination, sensitive, normal)
-      2. Visible concerns (acne, wrinkles, dark spots, redness, etc.)
-      3. Recommendations for skincare routine
-      4. Severity level for each concern (1-10)
-      
-      Respond in JSON format with this structure:
-      {
-        "skinType": "string",
-        "concerns": ["string"],
-        "concernSeverity": {"concern": number},
-        "recommendations": ["string"],
-        "overallScore": number
-      }`;
-
-      const analysisResult = await analyzeImage(imageData, prompt);
-      
-      // Create analysis record
-      const analysisData = insertSkinAnalysisSchema.parse({
+      const analysisRequest = {
+        imageData,
         userId: userId || 1,
-        imageUrl: "data:image/jpeg;base64," + imageData.split(",")[1],
-        analysisType: "photo",
+        analysisType: analysisType || 'skin',
         concerns: concerns || [],
-        geminiAnalysis: JSON.parse(analysisResult),
-        progressScore: JSON.parse(analysisResult).overallScore || 0
-      });
+        existingConditions: existingConditions || []
+      };
 
-      const analysis = await storage.createSkinAnalysis(analysisData);
+      const analysisResult = await analysisEngine.analyzeImage(analysisRequest);
       
       // Get product recommendations based on analysis
-      const skinType = JSON.parse(analysisResult).skinType;
-      const identifiedConcerns = JSON.parse(analysisResult).concerns;
-      
-      const recommendedProducts = await storage.getProducts({
-        skinTypes: [skinType],
-        concerns: identifiedConcerns
-      });
+      const recommendationRequest = {
+        userId: analysisRequest.userId,
+        skinType: analysisResult.skinType,
+        concerns: analysisResult.concerns,
+        budgetTier: req.body.budgetTier || 2,
+        preferences: req.body.preferences
+      };
+
+      const recommendations = await recommendationEngine.generatePersonalizedRoutine(recommendationRequest);
 
       res.json({
-        analysis,
-        recommendations: recommendedProducts.slice(0, 6)
+        analysis: analysisResult,
+        routine: recommendations,
+        progressTracking: {
+          canTrack: (await storage.getSkinAnalyses(analysisRequest.userId)).length > 0,
+          previousAnalysisCount: (await storage.getSkinAnalyses(analysisRequest.userId)).length
+        }
       });
     } catch (error) {
-      console.error("Image analysis error:", error);
-      res.status(500).json({ message: "Image analysis failed" });
+      console.error("Enhanced image analysis error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Image analysis failed", error: errorMessage });
     }
   });
 
+  // Enhanced Text Analysis endpoint
   app.post("/api/analysis/text", async (req, res) => {
     try {
-      const { concerns, userId, skinType, description } = req.body;
+      const { description, userId, skinType, concerns, currentRoutine, budgetTier } = req.body;
       
-      if (!concerns && !description) {
-        return res.status(400).json({ message: "Concerns or description is required" });
+      if (!description && !concerns) {
+        return res.status(400).json({ message: "Description or concerns are required" });
       }
 
-      // Generate recommendations based on text input
-      const prompt = `Based on these skincare concerns: "${concerns || description}", provide:
-      1. Likely skin type if not specified: ${skinType || "unknown"}
-      2. Product recommendations
-      3. Routine suggestions
-      4. Ingredient recommendations
-      
-      Respond in JSON format:
-      {
-        "skinType": "string",
-        "concerns": ["string"],
-        "recommendations": ["string"],
-        "ingredients": ["string"],
-        "routineSteps": ["string"]
-      }`;
-
-      const analysisResult = await analyzeSentiment(prompt); // Using sentiment as general analysis
-      
-      const analysisData = insertSkinAnalysisSchema.parse({
+      const analysisRequest = {
+        description: description || concerns.join(', '),
         userId: userId || 1,
-        analysisType: "text",
-        concerns: Array.isArray(concerns) ? concerns : [concerns || description],
-        skinType: skinType,
-        geminiAnalysis: { textAnalysis: analysisResult },
-        progressScore: 0
-      });
+        skinType,
+        concerns: Array.isArray(concerns) ? concerns : [concerns],
+        currentRoutine,
+        budgetTier: budgetTier || 2
+      };
 
-      const analysis = await storage.createSkinAnalysis(analysisData);
+      const analysisResult = await analysisEngine.analyzeText(analysisRequest);
       
-      // Get product recommendations
-      const recommendedProducts = await storage.getProducts({
-        skinTypes: skinType ? [skinType] : undefined,
-        concerns: Array.isArray(concerns) ? concerns : [concerns || description]
-      });
+      // Get personalized routine recommendations
+      const recommendationRequest = {
+        userId: analysisRequest.userId,
+        skinType: analysisResult.skinType,
+        concerns: analysisResult.concerns,
+        budgetTier: analysisRequest.budgetTier,
+        currentRoutine: analysisRequest.currentRoutine,
+        preferences: req.body.preferences
+      };
+
+      const recommendations = await recommendationEngine.generatePersonalizedRoutine(recommendationRequest);
 
       res.json({
-        analysis,
-        recommendations: recommendedProducts.slice(0, 6)
+        analysis: analysisResult,
+        routine: recommendations,
+        additionalInsights: {
+          ingredientAnalysis: analysisResult.concerns.length > 0 ? 
+            await recommendationEngine.getIngredientAnalysis(analysisResult.concerns) : null
+        }
       });
     } catch (error) {
-      console.error("Text analysis error:", error);
-      res.status(500).json({ message: "Text analysis failed" });
+      console.error("Enhanced text analysis error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Text analysis failed", error: errorMessage });
     }
   });
 
@@ -270,58 +167,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat endpoints
+  // Enhanced Chat endpoints using new Chat Engine
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message, userId, context } = req.body;
+      const { message, userId, language, context, messageType } = req.body;
       
       if (!message) {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      // Generate response using Gemini
-      const prompt = `As a skincare expert specializing in Egyptian beauty products, respond to: "${message}"
-      
-      Context: ${context ? JSON.stringify(context) : "General skincare question"}
-      
-      Provide helpful advice about:
-      - Egyptian skincare brands and products
-      - Ingredients and their benefits
-      - Skincare routines
-      - Product comparisons
-      
-      Respond in Arabic if the question is in Arabic, English if in English.
-      Keep responses concise but informative.`;
-
-      const response = await analyzeSentiment(prompt); // Using as general text generation
-      
-      const chatData = insertChatMessageSchema.parse({
-        userId: userId || 1,
+      const chatRequest = {
         message,
-        response: JSON.stringify(response),
+        userId: userId || 1,
+        language,
         context,
-        messageType: "question"
-      });
+        messageType: messageType || 'question'
+      };
 
-      const chatMessage = await storage.createChatMessage(chatData);
-      res.json(chatMessage);
+      const chatResponse = await chatEngine.processMessage(chatRequest);
+      
+      res.json(chatResponse);
     } catch (error) {
-      console.error("Chat error:", error);
-      res.status(500).json({ message: "Chat response failed" });
+      console.error("Enhanced chat error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Chat response failed", error: errorMessage });
     }
   });
 
   app.get("/api/chat/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const messages = await storage.getChatMessages(userId);
+      const limit = parseInt(req.query.limit as string) || 20;
+      const messages = await chatEngine.getChatHistory(userId, limit);
       res.json(messages);
     } catch (error) {
+      console.error("Chat history error:", error);
       res.status(500).json({ message: "Failed to fetch chat messages" });
     }
   });
 
-  // Product comparison endpoint
+  // Chat insights and analytics
+  app.get("/api/chat/:userId/sentiment", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const sentiment = await chatEngine.analyzeChatSentiment(userId);
+      res.json(sentiment);
+    } catch (error) {
+      console.error("Chat sentiment analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze chat sentiment" });
+    }
+  });
+
+  app.get("/api/chat/popular-questions", async (req, res) => {
+    try {
+      const questions = await chatEngine.getPopularQuestions();
+      res.json(questions);
+    } catch (error) {
+      console.error("Popular questions error:", error);
+      res.status(500).json({ message: "Failed to fetch popular questions" });
+    }
+  });
+
+  app.get("/api/chat/:userId/personalized-tips", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const tips = await chatEngine.generatePersonalizedTips(userId);
+      res.json({ tips });
+    } catch (error) {
+      console.error("Personalized tips error:", error);
+      res.status(500).json({ message: "Failed to generate personalized tips" });
+    }
+  });
+
+  // Enhanced Product comparison endpoint
   app.post("/api/products/compare", async (req, res) => {
     try {
       const { productIds, userId } = req.body;
@@ -330,54 +248,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Exactly 2 product IDs required for comparison" });
       }
 
-      const products = await storage.getProductsByIds(productIds);
+      const comparison = await recommendationEngine.compareProducts(productIds, userId || 1);
+      res.json(comparison);
+    } catch (error) {
+      console.error("Enhanced product comparison error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Product comparison failed", error: errorMessage });
+    }
+  });
+
+  // New Enhanced Recommendation endpoints
+  app.post("/api/recommendations/routine", async (req, res) => {
+    try {
+      const recommendationRequest = {
+        userId: req.body.userId || 1,
+        skinType: req.body.skinType,
+        concerns: req.body.concerns || [],
+        budgetTier: req.body.budgetTier || 2,
+        currentRoutine: req.body.currentRoutine,
+        skinAnalysisId: req.body.skinAnalysisId,
+        preferences: req.body.preferences
+      };
+
+      const routine = await recommendationEngine.generatePersonalizedRoutine(recommendationRequest);
+      res.json(routine);
+    } catch (error) {
+      console.error("Routine recommendation error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Failed to generate routine", error: errorMessage });
+    }
+  });
+
+  app.post("/api/recommendations/ingredients", async (req, res) => {
+    try {
+      const { ingredients } = req.body;
       
-      if (products.length !== 2) {
-        return res.status(404).json({ message: "One or both products not found" });
+      if (!ingredients || !Array.isArray(ingredients)) {
+        return res.status(400).json({ message: "Ingredients array is required" });
       }
 
-      // Generate comparison using Gemini
-      const prompt = `Compare these two skincare products:
-      
-      Product 1: ${products[0].nameEn} by ${products[0].brand}
-      Ingredients: ${products[0].ingredients?.join(", ")}
-      Price: ${products[0].price} EGP
-      For: ${products[0].skinTypes?.join(", ")} skin
-      Concerns: ${products[0].concerns?.join(", ")}
-      
-      Product 2: ${products[1].nameEn} by ${products[1].brand}
-      Ingredients: ${products[1].ingredients?.join(", ")}
-      Price: ${products[1].price} EGP
-      For: ${products[1].skinTypes?.join(", ")} skin
-      Concerns: ${products[1].concerns?.join(", ")}
-      
-      Provide a detailed comparison including:
-      1. Key differences in ingredients
-      2. Which is better for specific skin concerns
-      3. Value for money analysis
-      4. Recommendations for different skin types
-      
-      Format as JSON:
-      {
-        "winner": "product name",
-        "comparison": {
-          "ingredients": "analysis",
-          "effectiveness": "analysis",
-          "value": "analysis",
-          "suitability": "analysis"
-        },
-        "recommendation": "detailed recommendation"
-      }`;
-
-      const comparisonResult = await analyzeSentiment(prompt);
-      
-      res.json({
-        products,
-        comparison: comparisonResult
-      });
+      const analysis = await recommendationEngine.getIngredientAnalysis(ingredients);
+      res.json(analysis);
     } catch (error) {
-      console.error("Product comparison error:", error);
-      res.status(500).json({ message: "Product comparison failed" });
+      console.error("Ingredient analysis error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Failed to analyze ingredients", error: errorMessage });
+    }
+  });
+
+  // New Progress Tracking endpoints
+  app.get("/api/progress/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const metrics = await progressEngine.getProgressMetrics(userId);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Progress metrics error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Failed to get progress metrics", error: errorMessage });
+    }
+  });
+
+  app.get("/api/progress/:userId/timeline", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const timeline = await progressEngine.getProgressTimeline(userId);
+      res.json(timeline);
+    } catch (error) {
+      console.error("Progress timeline error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Failed to get progress timeline", error: errorMessage });
+    }
+  });
+
+  app.get("/api/progress/:userId/report", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const report = await progressEngine.generateProgressReport(userId);
+      res.json(report);
+    } catch (error) {
+      console.error("Progress report error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Failed to generate progress report", error: errorMessage });
+    }
+  });
+
+  app.post("/api/progress/compare", async (req, res) => {
+    try {
+      const { userId, analysisId1, analysisId2 } = req.body;
+      
+      if (!analysisId1 || !analysisId2) {
+        return res.status(400).json({ message: "Both analysis IDs are required" });
+      }
+
+      const comparison = await progressEngine.compareAnalyses(userId || 1, analysisId1, analysisId2);
+      res.json(comparison);
+    } catch (error) {
+      console.error("Progress comparison error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Failed to compare analyses", error: errorMessage });
     }
   });
 

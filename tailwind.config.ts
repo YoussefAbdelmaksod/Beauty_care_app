@@ -61,16 +61,12 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
-        // Girly Pink Color Palette
+        // Egyptian color palette
         "egyptian-gold": "var(--egyptian-gold)",
         "deep-teal": "var(--deep-teal)",
         "cream": "var(--cream)",
         "bronze": "var(--bronze)",
         "warm-white": "var(--warm-white)",
-        "rose-pink": "var(--rose-pink)",
-        "lavender": "var(--lavender)",
-        "coral": "var(--coral)",
-        "mint": "var(--mint)",
       },
       keyframes: {
         "accordion-down": {

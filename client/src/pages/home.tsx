@@ -8,7 +8,7 @@ import { CameraModal } from "@/components/camera-modal";
 import { useTranslation } from "@/lib/i18n";
 import { analysisApi, productsApi, pharmaciesApi, getCurrentLocation } from "@/lib/api";
 import { 
-  Camera, Edit, Globe, User, Heart,
+  Camera, Edit, Globe, User, 
   Waves, Calendar, TrendingUp, MessageCircle,
   MapPin, Phone, ChevronRight
 } from "lucide-react";
@@ -145,36 +145,6 @@ export default function Home() {
           <p className="text-sm opacity-90">{t('home.subtitle')}</p>
         </div>
       </header>
-
-      {/* Skin Quiz Call-to-Action */}
-      <div className="px-6 -mt-8 relative z-10 mb-4">
-        <Card className="bg-gradient-to-r from-rose-pink to-coral border-0 shadow-xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between text-white">
-              <div className="flex-1">
-                <h3 className="text-lg font-bold mb-2 flex items-center">
-                  <Heart className="mr-2 text-xl" />
-                  Discover Your Skin Type
-                </h3>
-                <p className="text-sm opacity-90 mb-4">
-                  Take our personalized quiz to find the perfect skincare routine for you!
-                </p>
-                <Button 
-                  onClick={() => navigate('/quiz')}
-                  className="bg-white text-rose-pink hover:bg-gray-50 font-semibold px-6 py-2 rounded-xl"
-                >
-                  Take Quiz Now ✨
-                </Button>
-              </div>
-              <div className="ml-4">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                  <Heart className="text-2xl text-white" />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Quick Analysis Card */}
       <div className="px-6 -mt-6 relative z-10">
