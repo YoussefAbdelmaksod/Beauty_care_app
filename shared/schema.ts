@@ -9,6 +9,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   preferredLanguage: text("preferred_language").default("ar"),
   budgetTier: text("budget_tier").default("basic"),
+  hasCompletedQuiz: boolean("has_completed_quiz").default(false),
+  quizCompletedAt: timestamp("quiz_completed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -56,6 +58,15 @@ export const routines = pgTable("routines", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const quizResponses = pgTable("quiz_responses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  sectionId: text("section_id").notNull(),
+  responses: jsonb("responses").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -100,6 +111,12 @@ export const insertRoutineSchema = createInsertSchema(routines).omit({
   createdAt: true,
 });
 
+export const insertQuizResponseSchema = createInsertSchema(quizResponses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   id: true,
   createdAt: true,
@@ -121,6 +138,9 @@ export type SkinAnalysis = typeof skinAnalyses.$inferSelect;
 
 export type InsertRoutine = z.infer<typeof insertRoutineSchema>;
 export type Routine = typeof routines.$inferSelect;
+
+export type InsertQuizResponse = z.infer<typeof insertQuizResponseSchema>;
+export type QuizResponse = typeof quizResponses.$inferSelect;
 
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;

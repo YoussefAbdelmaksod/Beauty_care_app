@@ -1,8 +1,9 @@
 import { 
-  users, products, skinAnalyses, routines, chatMessages, pharmacies,
+  users, products, skinAnalyses, routines, chatMessages, pharmacies, quizResponses,
   type User, type InsertUser, type Product, type InsertProduct,
   type SkinAnalysis, type InsertSkinAnalysis, type Routine, type InsertRoutine,
-  type ChatMessage, type InsertChatMessage, type Pharmacy, type InsertPharmacy
+  type ChatMessage, type InsertChatMessage, type Pharmacy, type InsertPharmacy,
+  type QuizResponse, type InsertQuizResponse
 } from "@shared/schema";
 
 export interface IStorage {
@@ -12,6 +13,12 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
+
+  // Quiz Responses
+  getQuizResponse(userId: number, sectionId: string): Promise<QuizResponse | undefined>;
+  getQuizResponses(userId: number): Promise<QuizResponse[]>;
+  createQuizResponse(response: InsertQuizResponse): Promise<QuizResponse>;
+  updateQuizResponse(userId: number, sectionId: string, responses: any): Promise<QuizResponse | undefined>;
 
   // Products
   getProducts(filters?: { category?: string; skinTypes?: string[]; concerns?: string[]; budgetMax?: number }): Promise<Product[]>;
@@ -51,6 +58,7 @@ export class MemStorage implements IStorage {
   private routines: Map<number, Routine> = new Map();
   private chatMessages: Map<number, ChatMessage> = new Map();
   private pharmacies: Map<number, Pharmacy> = new Map();
+  private quizResponses: Map<string, QuizResponse> = new Map();
   
   private currentUserId = 1;
   private currentProductId = 1;
@@ -58,6 +66,7 @@ export class MemStorage implements IStorage {
   private currentRoutineId = 1;
   private currentChatMessageId = 1;
   private currentPharmacyId = 1;
+  private currentQuizResponseId = 1;
 
   constructor() {
     this.seedData();
@@ -186,6 +195,8 @@ export class MemStorage implements IStorage {
       id,
       preferredLanguage: insertUser.preferredLanguage ?? "ar",
       budgetTier: insertUser.budgetTier ?? "basic",
+      hasCompletedQuiz: false,
+      quizCompletedAt: null,
       createdAt: new Date()
     };
     this.users.set(id, user);
@@ -396,6 +407,43 @@ export class MemStorage implements IStorage {
     };
     this.pharmacies.set(id, pharmacy);
     return pharmacy;
+  }
+
+  // Quiz Responses
+  async getQuizResponse(userId: number, sectionId: string): Promise<QuizResponse | undefined> {
+    const key = `${userId}_${sectionId}`;
+    return this.quizResponses.get(key);
+  }
+
+  async getQuizResponses(userId: number): Promise<QuizResponse[]> {
+    return Array.from(this.quizResponses.values()).filter(response => response.userId === userId);
+  }
+
+  async createQuizResponse(insertResponse: InsertQuizResponse): Promise<QuizResponse> {
+    const id = this.currentQuizResponseId++;
+    const key = `${insertResponse.userId}_${insertResponse.sectionId}`;
+    const response: QuizResponse = {
+      ...insertResponse,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.quizResponses.set(key, response);
+    return response;
+  }
+
+  async updateQuizResponse(userId: number, sectionId: string, responses: any): Promise<QuizResponse | undefined> {
+    const key = `${userId}_${sectionId}`;
+    const existing = this.quizResponses.get(key);
+    if (!existing) return undefined;
+    
+    const updated: QuizResponse = {
+      ...existing,
+      responses,
+      updatedAt: new Date()
+    };
+    this.quizResponses.set(key, updated);
+    return updated;
   }
 }
 

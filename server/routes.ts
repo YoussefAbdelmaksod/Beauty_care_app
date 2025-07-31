@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import authRoutes from "./routes/auth";
+import quizRoutes from "./routes/quiz";
 import { analyzeImage, analyzeSentiment } from "./services/gemini";
 import { AnalysisEngine } from "./services/analysis-engine";
 import { RecommendationEngine } from "./services/recommendation-engine";
@@ -17,6 +19,12 @@ const chatEngine = new ChatSupportEngine(apiKey);
 const progressEngine = new ProgressTrackingEngine();
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Authentication routes
+  app.use("/api/auth", authRoutes);
+  
+  // Quiz routes
+  app.use("/api/quiz", quizRoutes);
   
   // Products endpoints
   app.get("/api/products", async (req, res) => {
