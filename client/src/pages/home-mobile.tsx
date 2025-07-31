@@ -14,7 +14,9 @@ import {
   Sparkles,
   TrendingUp,
   Clock,
-  Gift
+  Gift,
+  LogOut,
+  Settings
 } from "lucide-react";
 
 export default function HomePage() {
@@ -33,6 +35,13 @@ export default function HomePage() {
   const { data: recommendedProducts } = useQuery({
     queryKey: ["/api/products/recommended", userId],
   });
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userLanguage");
+    window.location.reload();
+  };
 
   const quickActions = [
     {
@@ -77,14 +86,19 @@ export default function HomePage() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-gray-900">
-                {language === "ar" ? `مرحباً ${profile?.username || ""}` : `Hello ${profile?.username || ""}!`}
+                {language === "ar" ? `مرحباً ${profile?.username || "مستخدم"}` : `Hello ${profile?.username || "User"}!`}
               </h1>
               <p className="text-sm text-gray-600">
                 {language === "ar" ? "كيف يمكنني مساعدتك اليوم؟" : "How can I help you today?"}
               </p>
             </div>
           </div>
-          <Gift className="w-6 h-6 text-blue-500" />
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-600">
+              <LogOut className="w-4 h-4" />
+            </Button>
+            <Gift className="w-6 h-6 text-blue-500" />
+          </div>
         </div>
       </div>
 

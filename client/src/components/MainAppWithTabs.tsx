@@ -16,7 +16,7 @@ import HomePage from "../pages/home-mobile";
 import ChatPage from "../pages/chat";
 import ProductsPage from "../pages/products-mobile";
 import ComparePage from "../pages/compare";
-import ProfilePage from "../pages/profile";
+import ProfilePage from "../pages/profile-mobile";
 
 export default function MainAppWithTabs() {
   const [activeTab, setActiveTab] = useState("home");
